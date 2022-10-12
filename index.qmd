@@ -1,0 +1,106 @@
+---
+title: "HW4"
+author: "Jonathan Ross"
+format: html
+editor: visual
+---
+
+## Hawaii Precipitation
+
+Using data from https://www.ncei.noaa.gov, precipitation data was collated from 5 weather stations on the islands of Hawaii.
+
+```{r}
+weather <- read.csv('Weather.csv')
+
+
+library(ggplot2)
+library(dplyr)
+library(ggdendro)
+library(mapproj)
+library(knitr)
+#make average prcp per year
+weather$year <- substr(weather$DATE, 1,4)
+weather$month <- substr(weather$DATE, 6,7)
+p <- weather %>%
+  group_by(STATION, NAME, year) %>%
+  summarise(prcp=mean(PRCP),
+            Latitude=mean(LATITUDE), 
+            Longitude=mean(LONGITUDE)) 
+
+
+m <- na.omit(weather) %>%
+  group_by(STATION, NAME, month) %>%
+  summarise(prcp=mean(PRCP),
+            Latitude=mean(LATITUDE), 
+            Longitude=mean(LONGITUDE))
+```
+
+
+## Summary Table
+
+The table below shows the average rainfall per month in inches for each of the 5 weather stations. This table helps the reader understand and compare the average monthly rainfall. The average rainfall per month column is color coded to bring to the readers attention. Rainfall in Hilo stands out as different compared to the other weather stations. 
+
+```{r}
+library(kableExtra)
+z<- na.omit(weather)
+q <- z %>%
+  group_by(NAME) %>%
+  summarise(Count = n(), 
+            Avg_Prcp=round(mean(PRCP),4),
+            SD = round(sd(PRCP),4))
+
+q %>%
+  kbl(caption = "Average Monthly Rainfall in Inches") %>%
+  kable_paper("hover", full_width = F) %>%
+  column_spec(3, color = spec_color(q$Avg_Prcp[1:5], end = 0.5))
+```
+
+## Monthly average table
+
+This second table shows monthly rain fall data for each of the weather stations. The color gradient was set to easily identify wetter months from dryer months. Wetter months are greener in color while dryer months are purple in color.
+
+```{r}
+library(tidyr)
+m <- na.omit(weather)
+m.wide <- pivot_wider(m, names_from = month, values_from = PRCP)
+m.wide <- m.wide[,-c(1,3:7)]
+
+w <- m.wide %>%
+  group_by(NAME) %>%
+  summarise(Jan = mean(`01`, na.rm = T), 
+            Feb = mean(`02`, na.rm = T),
+            Mar = mean(`03`, na.rm = T),
+            Apr = mean(`04`, na.rm = T),
+            May = mean(`05`, na.rm = T),
+            Jun = mean(`06`, na.rm = T),
+            Jul = mean(`07`, na.rm = T),
+            Aug = mean(`08`, na.rm = T),
+            Sep = mean(`09`, na.rm = T),
+            Oct = mean(`10`, na.rm = T),
+            Nov = mean(`11`, na.rm = T),
+            Dec = mean(`12`, na.rm = T),)
+
+w1 <- t(w[2:13])
+
+colnames(w1) <- c("Hilo", "Honolulu", "Kahului", "Kula", "Lihue")
+
+x <-as.numeric( w[1,2:13])
+x1 <-as.numeric( w[2,2:13])
+x2 <-as.numeric( w[3,2:13])
+x3 <-as.numeric( w[4,2:13])
+x4 <-as.numeric( w[5,2:13])
+
+w1 %>%
+  kbl(caption = "Monthly Rainfall In Inches") %>%
+  kable_paper("hover", full_width = F) %>% 
+  column_spec(2, color = spec_color(x, end = 0.8)) %>%
+  column_spec(3, color = spec_color(x1, end = 0.8)) %>%
+  column_spec(4, color = spec_color(x2, end = 0.8)) %>%
+  column_spec(5, color = spec_color(x3, end = 0.8)) %>%
+  column_spec(6, color = spec_color(x4, end = 0.8)) %>%
+  scroll_box(width = "700px", height = "700px") 
+
+
+
+```
+
